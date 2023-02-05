@@ -21,7 +21,7 @@ var color_pallet = {
     "background":"#1e1e1e",
     "nodes":"#2d2d30",
     "lines":"#e6c677",
-    "select":"#168032",
+    "select":"#e6c677",
     "connector":"#0e0c0c"
 }
 
@@ -44,6 +44,36 @@ var ctx = canvas.getContext("2d");
 
 function distance(x1, y1, x2, y2){
     return Math.sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2))
+}
+
+function draw_curve(x2, y2, x1, y1, input){
+    //outline
+    ctx.beginPath()
+    ctx.moveTo(x1+5, y1+5)
+    x_control = -Math.min((x2+5 - x1+5)/4*3, 100)
+    ctx.bezierCurveTo(x1+5 + (Math.abs(x_control)), y1+5, x2+5-(Math.abs(x_control)), y2+5, x2+5, y2+5)
+    ctx.lineWidth = 8
+    ctx.strokeStyle = color_pallet.background;
+    ctx.stroke()
+
+    //main line
+    ctx.beginPath()
+    ctx.moveTo(x1+5, y1+5)
+    ctx.bezierCurveTo(x1+5 + (Math.abs(x_control)), y1+5, x2+5-(Math.abs(x_control)), y2+5, x2+5, y2+5)
+    ctx.lineWidth = 2
+    ctx.strokeStyle = color_pallet.lines;
+    ctx.stroke()
+
+    //balls
+    ctx.beginPath();
+    ctx.roundRect(x1+2, y1+2, 6, 6, 15)
+    ctx.fillStyle = color_pallet.lines;
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.roundRect(x2+2, y2+2, 6, 6, 15)
+    ctx.fillStyle = color_pallet.lines;
+    ctx.fill();
 }
 
 class Node{
@@ -142,42 +172,7 @@ class NodeConnection{
     }
 
     draw(){
-        //outline
-        ctx.beginPath()
-        ctx.moveTo(this.con1.x+5, this.con1.y+5)
-        x_control = Math.min((this.con2.x+5 - this.con1.x+5)/4*3, 150)
-        if(this.con1.input){
-            ctx.bezierCurveTo(this.con1.x+5 + (-Math.abs(x_control)), this.con1.y+5, this.con2.x+5-(-Math.abs(x_control)), this.con2.y+5, this.con2.x+5, this.con2.y+5)
-        }else{
-            ctx.bezierCurveTo(this.con1.x+5 + Math.abs(x_control), this.con1.y+5, this.con2.x+5-Math.abs(x_control), this.con2.y+5, this.con2.x+5, this.con2.y+5)
-        }
-        ctx.lineWidth = 8
-        ctx.strokeStyle = color_pallet.background;
-        ctx.stroke()
-        
-        //main line
-        ctx.beginPath()
-        ctx.moveTo(this.con1.x+5, this.con1.y+5)
-        x_control = Math.min((this.con2.x+5 - this.con1.x+5)/4*3, 150)
-        if(this.con1.input){
-            ctx.bezierCurveTo(this.con1.x+5 + (-Math.abs(x_control)), this.con1.y+5, this.con2.x+5-(-Math.abs(x_control)), this.con2.y+5, this.con2.x+5, this.con2.y+5)
-        }else{
-            ctx.bezierCurveTo(this.con1.x+5 + Math.abs(x_control), this.con1.y+5, this.con2.x+5-Math.abs(x_control), this.con2.y+5, this.con2.x+5, this.con2.y+5)
-        }
-        ctx.lineWidth = 2
-        ctx.strokeStyle = color_pallet.lines;
-        ctx.stroke()
-
-        //balls
-        ctx.beginPath();
-        ctx.roundRect(this.con1.x+2, this.con1.y+2, 6, 6, 15)
-        ctx.fillStyle = color_pallet.lines;
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.roundRect(this.con2.x+2, this.con2.y+2, 6, 6, 15)
-        ctx.fillStyle = color_pallet.lines;
-        ctx.fill();
+        draw_curve(this.con1.x, this.con1.y, this.con2.x, this.con2.y)
     }
 }
 
@@ -235,17 +230,11 @@ function master_draw(){
     if(MouseButtons == 1){
         if(selected_object != null){
             if(selected_object.constructor == NodeConnector){
-                ctx.beginPath()
-                ctx.moveTo(selected_object.x+5, selected_object.y+5)
-                x_control = Math.min((MouseX - selected_object.x)/4*3, 150)
-                if(!selected_object.input){
-                    ctx.bezierCurveTo(selected_object.x + Math.abs(x_control), selected_object.y, MouseX-Math.abs(x_control), MouseY, MouseX, MouseY)
-                }if(selected_object.input){
-                    ctx.bezierCurveTo(selected_object.x + (-Math.abs(x_control)), selected_object.y, MouseX-(-Math.abs(x_control)), MouseY, MouseX, MouseY)
+                if(selected_object.input){
+                    draw_curve(selected_object.x, selected_object.y, MouseX-5, MouseY-5)
+                }else{
+                    draw_curve(MouseX-5, MouseY-5, selected_object.x, selected_object.y)
                 }
-                ctx.lineWidth = 2
-                ctx.strokeStyle = color_pallet.lines
-                ctx.stroke()
 
                 connection_select = null
                 node_list.forEach(node => {
