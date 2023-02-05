@@ -50,7 +50,8 @@ function draw_curve(x2, y2, x1, y1, input){
     //outline
     ctx.beginPath()
     ctx.moveTo(x1+5, y1+5)
-    x_control = -Math.min((x2+5 - x1+5)/4*3, 100)
+    //x_control = Math.min(Math.abs(Math.min((x2+5 - x1+5)/4*3, 100)), 300)
+    x_control = Math.abs((x2+5 - x1+5)/3)
     ctx.bezierCurveTo(x1+5 + (Math.abs(x_control)), y1+5, x2+5-(Math.abs(x_control)), y2+5, x2+5, y2+5)
     ctx.lineWidth = 8
     ctx.strokeStyle = color_pallet.background;
@@ -59,7 +60,7 @@ function draw_curve(x2, y2, x1, y1, input){
     //main line
     ctx.beginPath()
     ctx.moveTo(x1+5, y1+5)
-    ctx.bezierCurveTo(x1+5 + (Math.abs(x_control)), y1+5, x2+5-(Math.abs(x_control)), y2+5, x2+5, y2+5)
+    ctx.bezierCurveTo(x1+5 + x_control, y1+5, x2+5-x_control, y2+5, x2+5, y2+5)
     ctx.lineWidth = 2
     ctx.strokeStyle = color_pallet.lines;
     ctx.stroke()
