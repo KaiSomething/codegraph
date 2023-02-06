@@ -39,6 +39,10 @@ canvas.addEventListener('mousemove', function (event) {
     }
 });
 
+canvas.addEventListener('mouseup', function (event) {
+    MouseButtons = event.buttons
+})
+
 canvas.addEventListener('contextmenu', event => event.preventDefault());
 
 var ctx = canvas.getContext("2d");
