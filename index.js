@@ -245,15 +245,20 @@ function master_draw(){
         if(selected_object != null){
             if(selected_object.constructor == NodeConnector && connection_select != null){
                 var inp
-                if(selected_object.input){inp = selected_object}else{inp = connection_select}
+                var oup
+                if(selected_object.input){inp = selected_object; oup = connection_select;}else{inp = connection_select; oup = selected_object;}
+
+                exists = false
 
                 for(var i = 0; i < connection_list.length; i++){
-                    if(connection_list[i].con1 == inp || connection_list[i].con2 == inp){
+                    if((connection_list[i].con1 == inp && connection_list[i].con2 == oup) || (connection_list[i].con1 == oup && connection_list[i].con2 == inp)){
+                        exists = true
+                    }else if(connection_list[i].con1 == inp || connection_list[i].con2 == inp){
                         connection_list.splice(i, 1)
                     }
                 }
-                
-                connection_list.push(new NodeConnection(selected_object, connection_select))
+
+                if(!exists){connection_list.push(new NodeConnection(selected_object, connection_select))}
             }
         }
         selected_object = null
