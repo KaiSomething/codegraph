@@ -133,12 +133,15 @@ class Node{
     }
 
     draw(){
+        ctx.beginPath();
+        ctx.roundRect(this.x-3, this.y-3, this.width+6, this.height+6, 17.5)
         if(this == selected_object){
-            ctx.beginPath();
-            ctx.roundRect(this.x-3, this.y-3, this.width+6, this.height+6, 20)
             ctx.fillStyle = color_pallet.select;
-            ctx.fill();
+        }else{
+            ctx.fillStyle = color_pallet.background;
         }
+        ctx.fill();
+
         ctx.beginPath();
         ctx.roundRect(this.x, this.y, this.width, this.height, 15)
         if(this.color == null){
