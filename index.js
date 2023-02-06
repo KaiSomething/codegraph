@@ -19,6 +19,7 @@ var connection_list = []
 var color_pallet = {
     "text":"#e6c677",
     "background":"#1e1e1e",
+    "grid_lines":"#303030",
     "nodes":"#2d2d30",
     "lines":"#e6c677",
     "select":"#e6c677",
@@ -30,7 +31,7 @@ canvas.addEventListener('mousemove', function (event) {
     MouseY = event.pageY
     MouseButtons = event.buttons
     canvas.style.cursor = "default"
-    if(MouseButtons == 2){
+    if(MouseButtons == 1){
         if(selected_object == null){
             window.scrollBy(-event.movementX, -event.movementY);
             canvas.style.cursor = "move"
@@ -42,11 +43,17 @@ canvas.addEventListener('contextmenu', event => event.preventDefault());
 
 var ctx = canvas.getContext("2d");
 
+function lerp( a, b, alpha ) {
+    return a + alpha * (b - a)
+}
+
 function distance(x1, y1, x2, y2){
     return Math.sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2))
 }
 
-function draw_curve(x2, y2, x1, y1, input){
+function draw_curve(x2, y2, x1, y1, prog=0.5){
+    ctx.setLineDash([1, 0]);
+
     //outline
     ctx.beginPath()
     ctx.moveTo(x1+5, y1+5)
@@ -57,7 +64,7 @@ function draw_curve(x2, y2, x1, y1, input){
     ctx.strokeStyle = color_pallet.background;
     ctx.stroke()
 
-    //main line
+    ctx.setLineDash([15, 15]);
     ctx.beginPath()
     ctx.moveTo(x1+5, y1+5)
     ctx.bezierCurveTo(x1+5 + x_control, y1+5, x2+5-x_control, y2+5, x2+5, y2+5)
@@ -75,6 +82,23 @@ function draw_curve(x2, y2, x1, y1, input){
     ctx.roundRect(x2+2, y2+2, 6, 6, 15)
     ctx.fillStyle = color_pallet.lines;
     ctx.fill();
+
+    //main line
+    low = Math.min(x1, x2)
+    high = Math.max(x1, x2)
+    ctx.save();
+    ctx.rect(low-(x_control/2)*prog, 0, (high-low)*prog+(x_control)*prog, canvas.height);
+    ctx.clip();
+
+    ctx.setLineDash([1, 0]);
+    ctx.beginPath()
+    ctx.moveTo(x1+5, y1+5)
+    ctx.bezierCurveTo(x1+5 + x_control, y1+5, x2+5-x_control, y2+5, x2+5, y2+5)
+    ctx.lineWidth = 3
+    ctx.strokeStyle = color_pallet.lines;
+    ctx.stroke()
+
+    ctx.restore();
 }
 
 class Node{
@@ -170,10 +194,11 @@ class NodeConnection{
             this.con1 = con2
             this.con2 = con1
         }
+        this.prog = 0
     }
 
     draw(){
-        draw_curve(this.con1.x, this.con1.y, this.con2.x, this.con2.y)
+        draw_curve(this.con1.x, this.con1.y, this.con2.x, this.con2.y, prog=this.prog)
     }
 }
 
@@ -183,17 +208,36 @@ node_list.push(new Node(700, 200, 150, 100, null, ["output1", "output2", "output
 node_list.push(new Node(100, 500, 150, 100, null, ["input1", "input2", "input3"], ["output1", "output2"]))
 
 function master_draw(){
-    //ctx.globalCompositeOperation = "destination-over";
-    ctx.clearRect(0, 0, canvas.width, canvas.height); // clear canvas
     ctx.fillStyle = color_pallet.background
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fill()
+
+    grid_spacing = 80
+    ctx.lineWidth = 1
+    for(var xl = 0; xl < canvas.width/grid_spacing; xl++){
+        ctx.beginPath()
+        ctx.moveTo(xl*grid_spacing, -5)
+        ctx.setLineDash([10, 10]);
+        ctx.lineTo(xl*grid_spacing, canvas.height)
+        ctx.strokeStyle = color_pallet.grid_lines
+        ctx.stroke()
+    }
+    for(var yl = 0; yl < canvas.height/grid_spacing; yl++){
+        ctx.beginPath()
+        ctx.moveTo(-5, yl*grid_spacing)
+        ctx.setLineDash([10, 10]);
+        ctx.lineTo(canvas.width, yl*grid_spacing)
+        ctx.strokeStyle = color_pallet.grid_lines
+        ctx.stroke()
+    }
 
     node_list.forEach(element => {
         element.draw()
     });
 
     connection_list.forEach(element => {
+        //element.prog = Math.min(1, element.prog+0.05)
+        element.prog = lerp(element.prog, 1, 0.05)
         element.draw()
     });
 
@@ -232,9 +276,9 @@ function master_draw(){
         if(selected_object != null){
             if(selected_object.constructor == NodeConnector){
                 if(selected_object.input){
-                    draw_curve(selected_object.x, selected_object.y, MouseX-5, MouseY-5)
+                    draw_curve(selected_object.x, selected_object.y, MouseX-5, MouseY-5, prog=0)
                 }else{
-                    draw_curve(MouseX-5, MouseY-5, selected_object.x, selected_object.y)
+                    draw_curve(MouseX-5, MouseY-5, selected_object.x, selected_object.y, prog=0)
                 }
 
                 connection_select = null
@@ -256,7 +300,7 @@ function master_draw(){
             }
         }
     }
-
+    
     window.requestAnimationFrame(master_draw);
 }
 
