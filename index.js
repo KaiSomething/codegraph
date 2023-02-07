@@ -99,7 +99,7 @@ function draw_curve(x2, y2, x1, y1, prog=0.5){
     low = Math.min(x1, x2)
     high = Math.max(x1, x2)
     ctx.save();
-    if(prog >= 0.999){
+    if(prog < 0.999){
         ctx.rect(low-(x_control/2)*prog, 0, (high-low)*prog+(x_control)*prog, canvas.height);
         ctx.clip();
     }
