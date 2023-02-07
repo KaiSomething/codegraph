@@ -40,6 +40,14 @@ canvas.addEventListener('mousemove', function (event) {
 });
 
 canvas.addEventListener('mouseup', function (event) {
+    MouseX = event.pageX
+    MouseY = event.pageY
+    MouseButtons = event.buttons
+})
+
+canvas.addEventListener('mousedown', function (event) {
+    MouseX = event.pageX
+    MouseY = event.pageY
     MouseButtons = event.buttons
 })
 
