@@ -1,7 +1,7 @@
 var canvas = document.querySelector("canvas");
 
-canvas.width = window.innerWidth*2;
-canvas.height = window.innerHeight*2;
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
 
 var selected_object = null
 var area_select_objects = []
