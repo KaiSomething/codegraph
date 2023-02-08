@@ -46,8 +46,7 @@ canvas.addEventListener('mousemove', function (event) {
         if(selected_object == null && !KeyboardKeysDown.includes("ControlLeft") && !KeyboardKeysDown.includes("AltLeft")){
             ShiftSelect = true
         }
-    }else if(MouseButtons == 2 || (MouseButtons == 1 && 
-        if(selected_object == null && !KeyboardKeysDown.includes("ControlLeft") && !KeyboardKeysDown.includes("AltLeft"))){
+    }else if(MouseButtons == 2 || (MouseButtons == 1 && KeyboardKeysDown.includes("AltLeft")){
         //window.scrollBy(-event.movementX, -event.movementY);
         PageOffsetX += event.movementX
         PageOffsetY += event.movementY
