@@ -4,14 +4,23 @@ canvas.width = window.innerWidth*2;
 canvas.height = window.innerHeight*2;
 
 var selected_object = null
+var area_select_objects = []
 var connection_select = null
 
 var MouseX = 0
 var MouseY = 0
 var MouseButtons = 0
 
-var objectClickOffsetX = null
-var objectClickOffsetY = null
+var PageOffsetX = 0;
+var PageOffsetY = 0;
+
+var KeyboardKeysDown = []
+var ShiftSelect = false
+var ShiftOriginX = null
+var ShiftOriginY = null
+
+var MouseXPrev = null
+var MouseYPrev = null
 
 var node_list = []
 var connection_list = []
@@ -23,32 +32,69 @@ var color_pallet = {
     "nodes":"#2d2d30",
     "lines":"#e6c677",
     "select":"#e6c677",
+    "group_select":"#0078d7",
     "connector":"#0e0c0c"
 }
 
 canvas.addEventListener('mousemove', function (event) {
-    MouseX = event.pageX
-    MouseY = event.pageY
+    MouseX = event.pageX - PageOffsetX
+    MouseY = event.pageY - PageOffsetY
     MouseButtons = event.buttons
     canvas.style.cursor = "default"
+    ShiftSelect = false
     if(MouseButtons == 1){
-        if(selected_object == null){
-            window.scrollBy(-event.movementX, -event.movementY);
-            canvas.style.cursor = "move"
+        if(selected_object == null && !KeyboardKeysDown.includes("ControlLeft")){
+            ShiftSelect = true
         }
+    }else if(MouseButtons == 2){
+        //window.scrollBy(-event.movementX, -event.movementY);
+        PageOffsetX += event.movementX
+        PageOffsetY += event.movementY
+        canvas.style.cursor = "move"
     }
 });
 
 canvas.addEventListener('mouseup', function (event) {
-    MouseX = event.pageX
-    MouseY = event.pageY
+    MouseX = event.pageX - PageOffsetX
+    MouseY = event.pageY - PageOffsetY
     MouseButtons = event.buttons
+    if(selected_object != null && selected_object.constructor == Node && (KeyboardKeysDown.includes("ControlLeft") || KeyboardKeysDown.includes("ShiftLeft"))){
+        if(!area_select_objects.includes(selected_object)){
+            area_select_objects.push(selected_object)
+        }else if(KeyboardKeysDown.includes("ControlLeft")){
+            var index = area_select_objects.indexOf(selected_object);
+            if (index !== -1) {
+                area_select_objects.splice(index, 1);
+            }
+        }
+    }
 })
 
 canvas.addEventListener('mousedown', function (event) {
-    MouseX = event.pageX
-    MouseY = event.pageY
+    MouseX = event.pageX - PageOffsetX
+    MouseY = event.pageY - PageOffsetY
     MouseButtons = event.buttons
+    if(event.buttons == 1 && selected_object == null && !KeyboardKeysDown.includes("ShiftLeft") && !KeyboardKeysDown.includes("ControlLeft")){
+        area_select_objects = []
+    }
+})
+
+document.addEventListener('keydown', function (event) {
+    //console.log(event.code)
+    if(!KeyboardKeysDown.includes(event.code)){
+        KeyboardKeysDown.push(event.code)
+    }
+    event.preventDefault()
+})
+
+document.addEventListener('keyup', function (event) {
+    //console.log(event.key)
+    if(KeyboardKeysDown.includes(event.code)){
+        var index = KeyboardKeysDown.indexOf(event.code);
+        if (index !== -1) {
+            KeyboardKeysDown.splice(index, 1);
+        }
+    }
 })
 
 canvas.addEventListener('contextmenu', event => event.preventDefault());
@@ -99,7 +145,7 @@ function draw_curve(x2, y2, x1, y1, prog=0.5){
     low = Math.min(x1, x2)
     high = Math.max(x1, x2)
     ctx.save();
-    if(prog < 0.999){
+    if(prog < 0.9){
         ctx.rect(low-(x_control/2)*prog, 0, (high-low)*prog+(x_control)*prog, canvas.height);
         ctx.clip();
     }
@@ -148,24 +194,38 @@ class Node{
 
     draw(){
         ctx.beginPath();
-        ctx.roundRect(this.x-3, this.y-3, this.width+6, this.height+6, 17.5)
+        ctx.roundRect(this.x+PageOffsetX, this.y+PageOffsetY, this.width, this.height, 15)
+        ctx.setLineDash([1, 0])
+        ctx.lineWidth = 5;
         if(this == selected_object){
-            ctx.fillStyle = color_pallet.select;
+            ctx.strokeStyle = color_pallet.select;
+        }else if (area_select_objects.includes(this)){
+            ctx.strokeStyle = color_pallet.group_select;
+            var p = (this.width*2 + this.height*2 - 15*4 + Math.PI*(15/2))/80
+            ctx.setLineDash([p, p])
         }else{
-            ctx.fillStyle = color_pallet.background;
+            ctx.strokeStyle = color_pallet.background;
         }
-        ctx.fill();
+        ctx.stroke()
+
+        //ctx.beginPath();
+        //ctx.roundRect(this.x-3, this.y-3, this.width+6, this.height+6, 17.5)
+        //if(this == selected_object){
+        //    ctx.fillStyle = color_pallet.select;
+        //}else if (area_select_objects.includes(this)){
+        //    ctx.fillStyle = color_pallet.group_select;
+        //    ctx.
+        //}else{
+        //    ctx.fillStyle = color_pallet.background;
+        //}
+        //ctx.fill();
 
         ctx.beginPath();
-        ctx.roundRect(this.x, this.y, this.width, this.height, 15)
+        ctx.roundRect(this.x+PageOffsetX, this.y+PageOffsetY, this.width, this.height, 15)
         if(this.color == null){
             ctx.fillStyle = color_pallet.nodes;
         }
         ctx.fill();
-        
-        this.node_connectors.forEach(element => {
-            element.draw()
-        });
     }
 }
 
@@ -181,7 +241,7 @@ class NodeConnector{
 
     draw(){
         ctx.beginPath();
-        ctx.roundRect(this.x, this.y, 10, 10, 15)
+        ctx.roundRect(this.x+PageOffsetX, this.y+PageOffsetY, 10, 10, 15)
         if(this == selected_object || this.selected){
             ctx.fillStyle = color_pallet.select;
         }else{
@@ -194,10 +254,10 @@ class NodeConnector{
         ctx.fillStyle = color_pallet.text
         if(this.input){
             ctx.textAlign = "left"
-            ctx.fillText(this.name, this.x+14, this.y+9);
+            ctx.fillText(this.name, this.x+14+PageOffsetX, this.y+9+PageOffsetY);
         }else{
             ctx.textAlign = "right"
-            ctx.fillText(this.name, this.x-4, this.y+9);
+            ctx.fillText(this.name, this.x-4+PageOffsetX, this.y+9+PageOffsetY);
         }
     }
 }
@@ -215,14 +275,13 @@ class NodeConnection{
     }
 
     draw(){
-        draw_curve(this.con1.x, this.con1.y, this.con2.x, this.con2.y, prog=this.prog)
+        draw_curve(this.con1.x+PageOffsetX, this.con1.y+PageOffsetY, this.con2.x+PageOffsetX, this.con2.y+PageOffsetY, prog=this.prog)
     }
 }
 
-node_list.push(new Node(100, 100, 150, 100, null, ["input1", "input1"], ["output1", "output2", "output3"]))
-node_list.push(new Node(500, 200, 150, 100, null, ["input1", "input1"], ["output1", "output2", "output3"]))
-node_list.push(new Node(700, 200, 150, 100, null, ["output1", "output2", "output3"], ["input1", "input1"]))
-node_list.push(new Node(100, 500, 150, 100, null, ["input1", "input2", "input3"], ["output1", "output2"]))
+for(var i = 0; i < 10; i++){
+    node_list.push(new Node(Math.random()*canvas.width, Math.random()*canvas.height, 150, 100, null, ["input1", "input2", "input3"], ["output1", "output2", "output3"]))
+}
 
 function master_draw(){
     ctx.fillStyle = color_pallet.background
@@ -231,25 +290,28 @@ function master_draw(){
 
     grid_spacing = 80
     ctx.lineWidth = 1
-    for(var xl = 0; xl < canvas.width/grid_spacing; xl++){
+    for(var xl = -grid_spacing*2; xl < window.innerWidth/grid_spacing; xl++){
         ctx.beginPath()
-        ctx.moveTo(xl*grid_spacing, -5)
+        ctx.moveTo(xl*grid_spacing + (PageOffsetX%grid_spacing), -5 + (PageOffsetY%grid_spacing))
         ctx.setLineDash([10, 10]);
-        ctx.lineTo(xl*grid_spacing, canvas.height)
+        ctx.lineTo(xl*grid_spacing + (PageOffsetX%grid_spacing), window.innerHeight + (PageOffsetY%grid_spacing))
         ctx.strokeStyle = color_pallet.grid_lines
         ctx.stroke()
     }
-    for(var yl = 0; yl < canvas.height/grid_spacing; yl++){
+    for(var yl = 0; yl < window.innerHeight/grid_spacing; yl++){
         ctx.beginPath()
-        ctx.moveTo(-5, yl*grid_spacing)
+        ctx.moveTo(-5 + (PageOffsetX%grid_spacing), (yl-1)*grid_spacing + (PageOffsetY%grid_spacing))
         ctx.setLineDash([10, 10]);
-        ctx.lineTo(canvas.width, yl*grid_spacing)
+        ctx.lineTo(window.innerWidth + (PageOffsetX%grid_spacing), (yl-1)*grid_spacing + (PageOffsetY%grid_spacing))
         ctx.strokeStyle = color_pallet.grid_lines
         ctx.stroke()
     }
 
-    node_list.forEach(element => {
-        element.draw()
+    node_list.forEach(node => {
+        node.draw()
+        node.node_connectors.forEach(element => {
+            element.draw()
+        });
     });
 
     connection_list.forEach(element => {
@@ -259,6 +321,8 @@ function master_draw(){
     });
 
     if(MouseButtons == 0){
+        ShiftOriginX = null
+        ShiftOriginY = null
         if(selected_object != null){
             if(selected_object.constructor == NodeConnector && connection_select != null){
                 var inp
@@ -280,7 +344,6 @@ function master_draw(){
         }
         selected_object = null
         connection_select = null
-        objectClickOffsetX = null
         node_list.forEach(node => {
             if(MouseX > node.x && MouseX < node.x+node.width && MouseY > node.y && MouseY < node.y+node.height){
                 selected_object = node
@@ -294,13 +357,40 @@ function master_draw(){
         });
     }
 
-    if(MouseButtons == 1){
+    if(ShiftSelect && MouseButtons == 1){
+        if(ShiftOriginX == null){
+            ShiftOriginX = MouseX
+            ShiftOriginY = MouseY
+        }
+
+        ctx.beginPath()
+        ctx.strokeStyle = color_pallet.lines
+        ctx.setLineDash([1, 0])
+        ctx.lineWidth = 3
+        ctx.roundRect(ShiftOriginX+PageOffsetX, ShiftOriginY+PageOffsetY, MouseX-ShiftOriginX, MouseY-ShiftOriginY, 10)
+        ctx.stroke()
+
+        if(!KeyboardKeysDown.includes("ShiftLeft")){
+            area_select_objects = []
+        }
+        node_list.forEach(node => {
+            x_c = node.x + node.width/2
+            y_c = node.y + node.height/2
+            if(x_c >= Math.min(ShiftOriginX, MouseX) && x_c <= Math.max(ShiftOriginX, MouseX) && y_c >= Math.min(ShiftOriginY, MouseY) && y_c <= Math.max(ShiftOriginY, MouseY)){
+                if(!area_select_objects.includes(node)){
+                    area_select_objects.push(node)
+                }
+            }
+        });
+    }
+
+    if(MouseButtons == 1 && !ShiftSelect && !KeyboardKeysDown.includes("ControlLeft") && !KeyboardKeysDown.includes("ShiftLeft")){
         if(selected_object != null){
             if(selected_object.constructor == NodeConnector){
                 if(selected_object.input){
-                    draw_curve(selected_object.x, selected_object.y, MouseX-5, MouseY-5, prog=0)
+                    draw_curve(selected_object.x+PageOffsetX, selected_object.y+PageOffsetY, MouseX-5+PageOffsetX, MouseY-5+PageOffsetY, prog=0)
                 }else{
-                    draw_curve(MouseX-5, MouseY-5, selected_object.x, selected_object.y, prog=0)
+                    draw_curve(MouseX-5+PageOffsetX, MouseY-5+PageOffsetY, selected_object.x+PageOffsetX, selected_object.y+PageOffsetY, prog=0)
                 }
 
                 connection_select = null
@@ -314,14 +404,21 @@ function master_draw(){
                 });
             }
             if(selected_object.constructor == Node){
-                if(objectClickOffsetX == null){
-                    objectClickOffsetX = selected_object.x - MouseX
-                    objectClickOffsetY = selected_object.y - MouseY
+                moveX = MouseX - MouseXPrev
+                moveY = MouseY - MouseYPrev
+                if(area_select_objects.includes(selected_object)){
+                    area_select_objects.forEach(node => {
+                        node.move_relative(moveX, moveY)
+                    });
+                }else{
+                    selected_object.move_relative(moveX, moveY)
+                    area_select_objects = []
                 }
-                selected_object.move(MouseX+objectClickOffsetX, MouseY+objectClickOffsetY)
             }
         }
     }
+    MouseXPrev = MouseX
+    MouseYPrev = MouseY
     
     window.requestAnimationFrame(master_draw);
 }
