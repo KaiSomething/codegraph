@@ -42,6 +42,7 @@ canvas.addEventListener('mousemove', function (event) {
     MouseButtons = event.buttons
     canvas.style.cursor = "default"
     ShiftSelect = false
+    
     if(MouseButtons == 1){
         if(selected_object == null && !KeyboardKeysDown.includes("ControlLeft") && !KeyboardKeysDown.includes("AltLeft")){
             ShiftSelect = true
