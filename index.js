@@ -309,7 +309,10 @@ function master_draw(){
     }
 
     node_list.forEach(node => {
-        node.draw()
+        if(node.x < canvas.width + PageOffsetX && node.x+node.width > PageOffsetX &&
+        node.y < canvas.height + PageOffsetY && node.y+node.height > PageOffsetY){
+            node.draw()
+        }
         node.node_connectors.forEach(element => {
             element.draw()
         });
