@@ -286,6 +286,10 @@ for(var i = 0; i < 1000; i++){
     node_list.push(new Node(Math.random()*canvas.width*50, Math.random()*canvas.height*50, 150, 100, null, Array(inps).fill("input"), Array(outs).fill("output")))
 }
 
+node_list.push(new Node(100, 100, 150, 100, null, ["input1", "input2", "input3"], ["output1", "output2", "output3"]))
+node_list.push(new Node(300, 100, 150, 100, null, ["input1", "input2", "input3"], ["output1", "output2", "output3"]))
+node_list.push(new Node(100, 250, 150, 100, null, ["input1", "input2", "input3"], ["output1", "output2", "output3"]))
+
 function master_draw(){
     ctx.fillStyle = color_pallet.background
     ctx.fillRect(0, 0, canvas.width, canvas.height);
