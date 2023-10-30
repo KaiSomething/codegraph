@@ -281,7 +281,9 @@ class NodeConnection{
 }
 
 for(var i = 0; i < 1000; i++){
-    node_list.push(new Node(Math.random()*canvas.width*200, Math.random()*canvas.height*200, 150, 100, null, ["input1", "input2", "input3"], ["output1", "output2", "output3"]))
+    var inps = Math.round(Math.random()*4+1);
+    var outs = Math.round(Math.random()*4+1);
+    node_list.push(new Node(Math.random()*canvas.width*100, Math.random()*canvas.height*100, 150, 100, null, Array(inps).fill("input"), Array(outs).fill("output")))
 }
 
 function master_draw(){
